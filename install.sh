@@ -5,6 +5,7 @@ umask 077
 
 SITE="${1:-}"
 RELEASE="d6021a5c34a2f470b2dab4f3d4292f2e84412734"
+PRIVATE_INSTALLER_BLOB="506633f54e059fa15d10cb2110d702be593eb92e"
 GH_VERSION="2.102.0"
 GH_SHA256="bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386"
 
@@ -40,30 +41,55 @@ gh auth status >/dev/null
 
 echo "=== FETCH IMMUTABLE PRIVATE BOOTSTRAP ==="
 gh api \
-  "repos/DigitalHouses/ansimble-2.0/contents/bootstrap/semaphore-launch.sh?ref=$RELEASE" \
+  "repos/DigitalHouses/ansimble-2.0/contents/bootstrap/semaphore-host-install.py?ref=$RELEASE" \
   > "$WORK/release.json"
 
-python3 - "$WORK/release.json" "$WORK/private-launch.sh" "$RELEASE" <<'PY'
+python3 - "$WORK/release.json" "$WORK/private-install.py" "$PRIVATE_INSTALLER_BLOB" <<'PY'
 import base64, hashlib, json, os, pathlib, sys
-source, target, revision = map(pathlib.Path, sys.argv[1:3]) if False else (pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3])
+source, target, expected_sha = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
 record = json.loads(source.read_text())
 if record.get("type") != "file" or record.get("encoding") != "base64":
-    raise SystemExit("BLOCKED: private bootstrap file missing")
+    raise SystemExit("BLOCKED: private installer source missing")
 blob = base64.b64decode(record["content"])
 identity = hashlib.sha1(b"blob " + str(len(blob)).encode() + b"\0" + blob).hexdigest()
-if identity != record.get("sha"):
-    raise SystemExit("BLOCKED: private bootstrap Git blob mismatch")
-marker = b"__RELEASE_COMMIT__"
-if blob.count(marker) != 1:
-    raise SystemExit("BLOCKED: private bootstrap release marker mismatch")
-content = blob.replace(marker, revision.encode("ascii"))
+if identity != expected_sha or record.get("sha") != expected_sha:
+    raise SystemExit("BLOCKED: private installer immutable Git identity mismatch")
 fd = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o700)
 with os.fdopen(fd, "wb") as output:
-    output.write(content)
-print("PRIVATE_LAUNCHER_SOURCE=VERIFIED")
+    output.write(blob)
+print("PRIVATE_INSTALLER_SOURCE=VERIFIED")
 PY
 
-echo "=== HANDOFF TO PINNED PRIVATE INSTALLER ==="
-echo "NOTE: the private pilot launcher currently requires another GitHub device confirmation."
-bash "$WORK/private-launch.sh" "$SITE"
+echo "=== READ NETWORK CONFIGURATION ==="
+BRIDGE_IP=$(ip -4 -o addr show dev vmbr0 | awk '$3=="inet" {print $4}')
+DEFAULT_GW=$(ip -4 route show default | awk '$1=="default" && $2=="via" {print $3}')
+readarray -t NETWORK < <(python3 - "$BRIDGE_IP" "$DEFAULT_GW" <<'PY'
+import ipaddress,sys
+try:
+    interface = ipaddress.IPv4Interface(sys.argv[1])
+    gateway = ipaddress.IPv4Address(sys.argv[2])
+    assert interface.network.prefixlen == 24
+    assert gateway in interface.network
+    address = ipaddress.IPv4Address(int(interface.network.network_address) + 231)
+    assert address != interface.ip and address != gateway
+except (IndexError, ValueError, AssertionError):
+    raise SystemExit("BLOCKED: unsupported or ambiguous PVE LAN")
+print(interface.ip)
+print(str(address) + "/24")
+print(gateway)
+PY
+)
+if (( ${#NETWORK[@]} != 3 )); then
+  echo "BLOCKED: PVE network resolution failed" >&2; exit 2
+fi
+echo "PVE=${NETWORK[0]} RUNNER=${NETWORK[1]}"
+echo "=== RUN PINNED PRIVATE INSTALLER ==="
+python3 "$WORK/private-install.py" \
+  --site "$SITE" \
+  --pve-ip "${NETWORK[0]}" \
+  --runner-cidr "${NETWORK[1]}" \
+  --gateway "${NETWORK[2]}" \
+  --expected-commit "$RELEASE" \
+  --use-github-session --apply
+
 echo "=== DONE ==="
