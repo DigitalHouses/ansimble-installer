@@ -6,7 +6,7 @@ bash -n install.sh
 echo "BASH_SYNTAX=PASS"
 
 # These checks must return BLOCKED before any download/login/write.
-for args in "" "wrong/site" "a b"; do
+for args in "" "wrong/site" "a b" "home --unknown" "home --resume --apply"; do
   if bash install.sh $args >/tmp/dh-installer-negative.log 2>&1; then
     echo "FAIL: unexpected success with malformed site: $args" >&2
     exit 1
@@ -37,6 +37,8 @@ assert 'secrets/fleet.vault.yml' not in s
 assert 'pct destroy' not in s
 assert 'pct create' not in s
 assert 'readarray -t NETWORK' in s
+assert 'RESUME_ARGS=(--resume)' in s
+assert '--apply "${RESUME_ARGS[@]}"' in s
 assert 'expected_sha' in s
 assert 'record.get("sha") != expected_sha' in s
 files = list(Path().rglob("*"))
