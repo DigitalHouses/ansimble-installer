@@ -7,7 +7,7 @@
 Use a **trusted root terminal on Proxmox VE**, after initial PVE LAN configuration. For the Home pilot (`site=home`), this command uses an immutable public Git commit:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/a592795bf0dfec9f9e188a132c4f607c7aec17d5/install.sh); test -n "$src"; bash -c "$src" -- home'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/d11d03d5e6de3d54f17f4f958a118d0777221b90/install.sh); test -n "$src"; bash -c "$src" -- home'
 ```
 
 The command preserves terminal input for the owner's hidden Fleet Vault password and explicit CT confirmation. It downloads the installer over HTTPS directly from GitHub, **without** manual ZIP, file transfer, or an existing GitHub CLI installation on PVE. Do not pipe the script into `bash` because later interactive prompts require terminal input. Always pin the public commit; do not execute mutable `main` as root.
@@ -27,8 +27,8 @@ The initial Semaphore URL for the Home pilot is `https://192.168.11.231:3000/`.
 **First E2E pilot, not yet accepted on a real PVE.** Public loader CI tests PVE safety gates and shell syntax; private repository CI additionally tests a live Semaphore 2.19 API server. The full unattended fresh-CT installation, private Git checkout and first human login must still pass Home E2E. On error, **do not rerun blindly**: inspect the actual CT and GitHub deploy keys.
 
 The public loader pins:
-- Private installer commit: `75b37e1639d1d3553eaccc0eef478269f73298ae` (tested source).
-- Private installer blob: `48827e2ba835c9d21c16d64e360d2b53970027e1`.
+- Private installer commit: `8e1d36ae9ed30d6b2249981a2378b27c99f3c791` (tested source).
+- Private installer blob: `6149088623debbf4ab8744631921ea164579a174`.
 - Official GitHub CLI: 2.102.0 with independently pinned SHA-256.
 
 This repository does not contain the private installer; it performs GitHub authorization and **verified transfer** only. Changes to deployment logic happen in the private repository and require a new, reviewed pinned public release.
