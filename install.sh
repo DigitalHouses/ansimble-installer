@@ -9,8 +9,15 @@ PRIVATE_INSTALLER_BLOB="6149088623debbf4ab8744631921ea164579a174"
 GH_VERSION="2.102.0"
 GH_SHA256="bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386"
 
-if (( $# != 1 )) || [[ ! "$SITE" =~ ^[a-z][a-z0-9_-]{0,30}$ ]]; then
-  echo "BLOCKED: usage: install.sh <site-id>" >&2
+RESUME_ARGS=()
+if (( $# == 2 )) && [[ "${2}" == "--resume" ]]; then
+  RESUME_ARGS=(--resume)
+elif (( $# != 1 )); then
+  echo "BLOCKED: usage: install.sh <site-id> [--resume]" >&2
+  exit 2
+fi
+if [[ ! "$SITE" =~ ^[a-z][a-z0-9_-]{0,30}$ ]]; then
+  echo "BLOCKED: invalid site ID" >&2
   exit 2
 fi
 if (( EUID != 0 )) || [[ ! -f /etc/pve/user.cfg ]]; then
@@ -90,6 +97,6 @@ python3 "$WORK/private-install.py" \
   --runner-cidr "${NETWORK[1]}" \
   --gateway "${NETWORK[2]}" \
   --expected-commit "$RELEASE" \
-  --use-github-session --apply
+  --use-github-session --apply "${RESUME_ARGS[@]}"
 
 echo "=== DONE ==="
