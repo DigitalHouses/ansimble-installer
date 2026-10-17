@@ -12,8 +12,10 @@ GH_SHA256="bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386"
 RESUME_ARGS=()
 if (( $# == 2 )) && [[ "${2}" == "--resume" ]]; then
   RESUME_ARGS=(--resume)
+elif (( $# == 2 )) && [[ "${2}" == "--resume-ansible" ]]; then
+  RESUME_ARGS=(--resume-ansible)
 elif (( $# != 1 )); then
-  echo "BLOCKED: usage: install.sh <site-id> [--resume]" >&2
+  echo "BLOCKED: usage: install.sh <site-id> [--resume|--resume-ansible]" >&2
   exit 2
 fi
 if [[ ! "$SITE" =~ ^[a-z][a-z0-9_-]{0,30}$ ]]; then
