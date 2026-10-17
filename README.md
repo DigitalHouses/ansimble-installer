@@ -1,31 +1,42 @@
 # DigitalHouses · Ansimble Runner Installer
 
-**Public distribution only.** This repository contains the initial PVE launcher. The actual infrastructure code, Ansible roles, inventories, and encrypted Fleet Vault remain in the private repository `DigitalHouses/ansimble-2.0`.
+**Public network entrypoint only.** The installer provisions a local Ansimble-2 runner with Semaphore as its only Web UI. The actual installer, Ansible roles, site inventories, and Fleet Vault are kept in the **private** `DigitalHouses/ansimble-2.0` repository.
 
-## Installation contract
+## One command · clean PVE
 
-On a **trusted clean Proxmox VE host** the engineer executes one network command. The installer:
+Use a **trusted root terminal on Proxmox VE**, after initial PVE LAN configuration. For the Home pilot (`site=home`), this command uses an immutable public Git commit:
 
-1. Verifies the pinned official GitHub CLI download before running it.
-2. Requests the DigitalHouses owner's GitHub **device authorization with 2FA** in a trusted browser; never asks for GitHub password or OTP in the PVE terminal.
-3. Fetches the private Ansimble-2 installer **from a fixed Git commit**, validates the Git blob, and asks the owner to enter their Fleet Vault master password in a trusted root terminal.
-4. After independent checks and explicit `CREATE CT1231 ...` confirmation, creates a fresh runner and installs Ansible + Semaphore.
-5. Configures Semaphore as the **only Web UI**, initially with read-only smoke/audit tasks.
+```bash
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/90615a9ac7d34789a459cddde723ce2985b1c4af/install.sh); test -n "$src"; bash -c "$src" -- home'
+```
 
-**This is a first-pilot release, not yet production-accepted on a real PVE.** Do not run on a production host without the owner's explicit E2E acceptance. No background services or databases are installed by this *distribution repository* itself.
+The command preserves terminal input for the owner's hidden Fleet Vault password and explicit CT confirmation. It downloads the installer over HTTPS directly from GitHub, **without** manual ZIP, file transfer, or an existing GitHub CLI installation on PVE. Do not pipe the script into `bash` because later interactive prompts require terminal input. Always pin the public commit; do not execute mutable `main` as root.
 
-## Source and releases
+## Expected flow
 
-- `install.sh` is a **generated immutable build output** of the private repository's canonical `bootstrap/semaphore-launch.sh`. Do not maintain a separate implementation here.
-- Trusted source release commit: `d6021a5c34a2f470b2dab4f3d4292f2e84412734`.
-- The initial publication must be verified with `bash -n`, a pinned SHA-256 of the release script, and read-only CI before allowing real PVE writes.
-- Bootstrap requires PVE root, an available standard Debian 13 template, a free reserved CTID 1231 and IPv4 `.231` on `vmbr0`, and safe fleet credentials.
-- Owner's root terminal must be trusted: an engineer with PVE root can inspect runtime secrets. GitHub 2FA alone cannot prevent that.
+1. `install.sh` checks root/PVE identity and obtains a SHA256-pinned official GitHub CLI in disposable, root-only storage.
+2. The owner opens [GitHub device sign-in](https://github.com/login/device) on their **own device**, approves access and completes 2FA there. The engineer must not ask for their GitHub password or OTP.
+3. The script downloads the private installer from a **fixed private Git commit**, verifies its independently pinned Git blob and hands off the existing authorized GitHub session.
+4. The private installer checks PVE, LAN, reserved CTID 1231/IP `.231`, Git revision and the operator-held Fleet Vault master password before performing any PVE guest changes.
+5. Following explicit `CREATE CT1231 ansimble-<site>` approval, it creates a fresh Debian 13 LXC runner, installs Ansible Core and Semaphore, and prepares initial read-only tasks. No separate DigitalHouses Web UI.
 
-## Security
+The initial Semaphore URL for the Home pilot is `https://192.168.11.231:3000/`.
 
-**Never add to this repository:** site inventories, credentials, tokens, SSH private keys, decrypted or encrypted Fleet Vault, customer-specific network configuration, Cloudflare tunnel details, or copies of private repository history.
+## Release status
 
-The contents are public and must remain free of secrets. Use immutable release revisions when fetching code over HTTPS; **do not run an unverified mutable `main` script as root**.
+**First E2E pilot, not yet accepted on a real PVE.** Public loader CI tests PVE safety gates and shell syntax; private repository CI additionally tests a live Semaphore 2.19 API server. The full unattended fresh-CT installation, private Git checkout and first human login must still pass Home E2E. On error, **do not rerun blindly**: inspect the actual CT and GitHub deploy keys.
 
-Source of truth: `DigitalHouses/ansimble-2.0`. The two repositories have separate responsibilities: public distribution, private orchestration.
+The public loader pins:
+- Private installer commit: `d6021a5c34a2f470b2dab4f3d4292f2e84412734` (tested source).
+- Private installer blob: `506633f54e059fa15d10cb2110d702be593eb92e`.
+- Official GitHub CLI: 2.102.0 with independently pinned SHA-256.
+
+This repository does not contain the private installer; it performs GitHub authorization and **verified transfer** only. Changes to deployment logic happen in the private repository and require a new, reviewed pinned public release.
+
+## Security and trust
+
+No credentials, API tokens, PVE private keys, inventories, customer-specific network information, Cloudflare tunnel configurations or Fleet Vault material may be committed here.
+
+The initial GitHub login and Fleet Vault password must be entered **by the owner using a trusted terminal/device**. An engineer with ongoing root access to PVE can inspect runtime secrets; GitHub 2FA alone does not protect against an untrusted PVE root operator.
+
+Public source: [DigitalHouses/ansimble-installer](https://github.com/DigitalHouses/ansimble-installer). Private source of truth: `DigitalHouses/ansimble-2.0`.
