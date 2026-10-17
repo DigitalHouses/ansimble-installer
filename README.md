@@ -7,7 +7,7 @@
 Use a **trusted root terminal on Proxmox VE**, after initial PVE LAN configuration. For the Home pilot (`site=home`), this command uses an immutable public Git commit:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b301da8dd13253c44f8c976b99d84580830bc920/install.sh); test -n "$src"; bash -c "$src" -- home'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/f785836ef2d825182030db9fdc9e75b006c5b123/install.sh); test -n "$src"; bash -c "$src" -- home'
 ```
 
 ### Resume an existing empty CT1231 after interrupted commissioning
@@ -15,10 +15,10 @@ bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubuserco
 **Only when the initial installer already created CT1231 and stopped before installing Ansible/Semaphore**, add the explicit recovery flag to the same pinned network command:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b301da8dd13253c44f8c976b99d84580830bc920/install.sh); test -n "$src"; bash -c "$src" -- home --resume'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/f785836ef2d825182030db9fdc9e75b006c5b123/install.sh); test -n "$src"; bash -c "$src" -- home --resume'
 ```
 
-The private installer performs immutable Git authorization, Fleet Vault verification, and fresh read-only CT identity/state checks. It fails closed for a VM, an unexpected CT hostname/IP/resources, mounts, a non-running CT, or any partially installed Semaphore runtime. It requires explicit `RESUME CT1231` confirmation before any guest changes. **It never destroys or recreates an existing CT.** If blocked, inspect the actual guest state; do not force or bypass the gate.
+The private installer performs immutable Git authorization, Fleet Vault verification, fresh read-only CT identity/state checks, and a strictly scoped correction of Debian `/etc` permissions (0700 to 0755 only). It fails closed for a VM, an unexpected CT hostname/IP/resources, mounts, a non-running CT, or any partially installed Semaphore runtime. It requires explicit `RESUME CT1231` confirmation before any guest changes. **It never destroys or recreates an existing CT.** If blocked, inspect the actual guest state; do not force or bypass the gate.
 
 The command preserves terminal input for the owner's hidden Fleet Vault password and explicit CT confirmation. It downloads the installer over HTTPS directly from GitHub, **without** manual ZIP, file transfer, or an existing GitHub CLI installation on PVE. Do not pipe the script into `bash` because later interactive prompts require terminal input. Always pin the public commit; do not execute mutable `main` as root.
 
@@ -37,8 +37,8 @@ The initial Semaphore URL follows the runner's verified site inventory IP at TCP
 **First E2E pilot, not yet accepted on a real PVE.** Public loader CI tests PVE safety gates and shell syntax; private repository CI additionally tests a live Semaphore 2.19 API server. The full unattended fresh-CT installation, private Git checkout and first human login must still pass Home E2E. On error, **do not rerun blindly**: inspect the actual CT and GitHub deploy keys.
 
 The public loader pins:
-- Private installer commit: `902d1dbf8739f8d38b4c280b8ded50dfcfdc24c2` (tested source).
-- Private installer blob: `811b011ebdb298fb9e5cb44863d21224fa86e7d8`.
+- Private installer commit: `6fe8702c2bf4c7d2073ac90b51d03fc5db95bbf3` (tested source).
+- Private installer blob: `bb73ec6d18dd3db314f73718c78ef71de2ac6beb`.
 - Official GitHub CLI: 2.102.0 with independently pinned SHA-256.
 
 This repository does not contain the private installer; it performs GitHub authorization and **verified transfer** only. Changes to deployment logic happen in the private repository and require a new, reviewed pinned public release.
