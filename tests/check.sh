@@ -38,6 +38,7 @@ assert 'pct destroy' not in s
 assert 'pct create' not in s
 assert 'readarray -t NETWORK' in s
 assert 'RESUME_ARGS=(--resume)' in s
+assert 'RESUME_ARGS=(--resume-ansible)' in s
 assert '--apply "${RESUME_ARGS[@]}"' in s
 assert 'expected_sha' in s
 assert 'record.get("sha") != expected_sha' in s
