@@ -10,7 +10,7 @@
 
 ## Зафиксированные ревизии
 
-`install.sh` версии `673e45919051b2eb206205b059d5b66181d64513` использует:
+`install.sh` версии `28fd087c51e9021179927885b25f18463a22cf23` использует:
 
 - код: `267986be6db414a72fe4476656ebcdb230ce77d6` из `dh_ansible`;
 - Fleet Detail: `acde4a83668a0285fe05f54b515211c0b2663ef1`;
@@ -26,7 +26,7 @@
 ```bash
 clear
 SITE_ID="owner-home" # пример синтаксиса, не существующий объект
-SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/673e45919051b2eb206205b059d5b66181d64513/install.sh)"
+SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/28fd087c51e9021179927885b25f18463a22cf23/install.sh)"
 test -n "$SOURCE" || exit 2
 bash -c "$SOURCE" -- "$SITE_ID"
 ```
