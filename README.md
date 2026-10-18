@@ -10,10 +10,10 @@
 
 ## Зафиксированные ревизии
 
-`install.sh` версии `7946d7058f8a85b0b9d17fff2800c207921aaf50` использует:
+`install.sh` версии `7b1d7bb7ed99b4a95db79c2eead95146ec7093a7` использует:
 
 - код: `2f05b6ecaa2113057046ddbbf2d2dbf0235d09b7` из `dh_ansible`;
-- Fleet Detail: `2d3d2b4d21ff2f4a9bb76b80f57d02e78ebf9242`;
+- Fleet Detail: `6dd57b2e35573a4883e70188590e8e595688bd71`;
 - отдельно проверяемый Git blob файла `bootstrap/semaphore-host-install.py`;
 - официальный GitHub CLI 2.102.0 с проверкой SHA-256.
 
@@ -21,12 +21,12 @@
 
 ## Запуск на чистом PVE
 
-Работа из доверенного root-терминала PVE. `SITE_ID` нужно заменить на **утверждённый** ID дома формата `<owner>-<type>`. Нельзя использовать старый псевдоним `home` до миграции его inventory.
+Работа из доверенного root-терминала PVE. Для дома «Асыл-Мура» канонический идентификатор — `serzhan-home` (owner=`serzhan`, type=`home`). Старый псевдоним `home` больше не используется.
 
 ```bash
 clear
-SITE_ID="owner-home" # пример синтаксиса, не существующий объект
-SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/7946d7058f8a85b0b9d17fff2800c207921aaf50/install.sh)"
+SITE_ID="serzhan-home"
+SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/7b1d7bb7ed99b4a95db79c2eead95146ec7093a7/install.sh)"
 test -n "$SOURCE" || exit 2
 bash -c "$SOURCE" -- "$SITE_ID"
 ```
@@ -39,7 +39,7 @@ bash -c "$SOURCE" -- "$SITE_ID"
 
 В настоящее время `dh_ansible` всё ещё **private**. Прежде чем сделать его публичным, требуется отдельная проверка текущего дерева **и всей Git-истории** на приватные данные. Пока он private, штатный импорт `Public Git (none)` из Semaphore не сработает.
 
-Также прежний site ID `home` в Fleet Detail пока не переведён на формат `<owner>-<type>`; чистый E2E для домашнего объекта должен ждать утверждённого имени и совместимого inventory.
+Имя сайта в Fleet Detail приведено к `serzhan-home`. Желаемый hostname runner при новой установке — `ansimble-serzhan-home`. Текущий тестовый CT1231 пока не переименован: он продолжает работу до чистого E2E, при котором будет пересоздан.
 
 Рабочий домашний CT1231 не удалять только ради теста загрузчика. Полное принятие Bootstrap = запуск на чистом PVE с удалённым тестовым CT и Debian-шаблоном, затем автоматическое создание LXC, Ansible, Semaphore, Desktop Commander, проверка веб-UI, smoke playbooks и повторного apply. Только после этого можно считать старые репозитории ненужными и безопасно удалить их отдельно.
 
