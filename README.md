@@ -10,10 +10,10 @@
 
 ## Зафиксированные ревизии
 
-`install.sh` версии `28fd087c51e9021179927885b25f18463a22cf23` использует:
+`install.sh` версии `7946d7058f8a85b0b9d17fff2800c207921aaf50` использует:
 
-- код: `267986be6db414a72fe4476656ebcdb230ce77d6` из `dh_ansible`;
-- Fleet Detail: `acde4a83668a0285fe05f54b515211c0b2663ef1`;
+- код: `ec1ceab713bc96026e01a830c1f3f693f31c6b1e` из `dh_ansible`;
+- Fleet Detail: `6b46efd5edfc764d078172d43624a1ab6ef3e891`;
 - отдельно проверяемый Git blob файла `bootstrap/semaphore-host-install.py`;
 - официальный GitHub CLI 2.102.0 с проверкой SHA-256.
 
@@ -26,7 +26,7 @@
 ```bash
 clear
 SITE_ID="owner-home" # пример синтаксиса, не существующий объект
-SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/28fd087c51e9021179927885b25f18463a22cf23/install.sh)"
+SOURCE="$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/7946d7058f8a85b0b9d17fff2800c207921aaf50/install.sh)"
 test -n "$SOURCE" || exit 2
 bash -c "$SOURCE" -- "$SITE_ID"
 ```
