@@ -7,7 +7,7 @@
 Use a **trusted root terminal on Proxmox VE**, after initial PVE LAN configuration. For the Home pilot (`site=home`), this command uses an immutable public Git commit:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b35edf12f060782c361bf0672fb293347eba36b4/install.sh); test -n "$src"; bash -c "$src" -- home'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/1668876e4b33b557b4874bc2701990609bcf847a/install.sh); test -n "$src"; bash -c "$src" -- home'
 ```
 
 ### Resume an existing empty CT1231 after interrupted commissioning
@@ -15,7 +15,7 @@ bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubuserco
 **Only when the initial installer already created CT1231 and stopped before installing Ansible/Semaphore**, add the explicit recovery flag to the same pinned network command:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b35edf12f060782c361bf0672fb293347eba36b4/install.sh); test -n "$src"; bash -c "$src" -- home --resume'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/1668876e4b33b557b4874bc2701990609bcf847a/install.sh); test -n "$src"; bash -c "$src" -- home --resume'
 ```
 
 The private installer performs immutable Git authorization, Fleet Vault verification, fresh read-only CT identity/state checks, and a strictly scoped correction of Debian `/etc` permissions (0700 to 0755 only). It fails closed for a VM, an unexpected CT hostname/IP/resources, mounts, a non-running CT, or any partially installed Semaphore runtime. It requires explicit `RESUME CT1231` confirmation before any guest changes. **It never destroys or recreates an existing CT.** If blocked, inspect the actual guest state; do not force or bypass the gate.
@@ -25,7 +25,7 @@ The private installer performs immutable Git authorization, Fleet Vault verifica
 For a **verified CT1231 with the correct Ansible 2.21.4 venv but no Semaphore installation**, for example after an unsupported locale stopped `ansible-playbook --version`, use the distinct explicit recovery stage:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b35edf12f060782c361bf0672fb293347eba36b4/install.sh); test -n "$src"; bash -c "$src" -- home --resume-ansible'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/1668876e4b33b557b4874bc2701990609bcf847a/install.sh); test -n "$src"; bash -c "$src" -- home --resume-ansible'
 ```
 
 The operator must confirm `RESUME ANSIBLE CT1231`. This mode requires a running CT matching the exact expected hostname, network, storage, resources, owner and access checks. It verifies the existing venv version and dependencies under `C.UTF-8`, rejects Semaphore binaries, database, config, service and incomplete release files, skips reinstalling the Ansible venv, and continues with Semaphore installation and local API seeding. It **never recreates or destroys** the CT.
@@ -35,7 +35,7 @@ The operator must confirm `RESUME ANSIBLE CT1231`. This mode requires a running 
 When the initial admin exists and the HTTPS service is working but the GitHub deploy key/project/templates have not yet been seeded, use a distinct, pinned recovery mode:
 
 ```bash
-bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/b35edf12f060782c361bf0672fb293347eba36b4/install.sh); test -n "$src"; bash -c "$src" -- home --resume-semaphore'
+bash -c 'set -Eeuo pipefail; src=$(curl -fsSL --retry 2 https://raw.githubusercontent.com/DigitalHouses/ansimble-installer/1668876e4b33b557b4874bc2701990609bcf847a/install.sh); test -n "$src"; bash -c "$src" -- home --resume-semaphore'
 ```
 
 Requires `COMPLETE SEMAPHORE CT1231` confirmation. The private installer checks exact CT identity/resources, pinned Semaphore 2.19.16, TLS health, root-only initial admin credentials, and absence of previous deploy-key artifacts. It tests admin login with the Semaphore API before registering a new read-only GitHub deploy key and seeding the site project. **It does not reinstall Ansible or Semaphore, migrate/delete SQLite, change the admin password, or restart the service.** If the check fails, stop and investigate rather than rerunning a previous stage.
@@ -48,17 +48,17 @@ The command preserves terminal input for the owner's hidden Fleet Vault password
 2. The owner opens [GitHub device sign-in](https://github.com/login/device) on their **own device**, approves access and completes 2FA there. The engineer must not ask for their GitHub password or OTP.
 3. The script downloads the private installer from a **fixed private Git commit**, verifies its independently pinned Git blob and hands off the existing authorized GitHub session.
 4. The private installer checks PVE, LAN, reserved CTID 1231/IP `.231`, Git revision and the operator-held Fleet Vault master password before performing any PVE guest changes.
-5. Following explicit `CREATE CT1231` approval, it refreshes the official PVE appliance catalog, downloads the latest Debian 13 standard amd64 template when absent (or reuses an already matching local template), verifies local registration and archive presence, creates CT1231, then installs Ansible Core and Semaphore. No separate DigitalHouses Web UI.
+5. Following explicit `CREATE CT1231` approval, it refreshes the official PVE appliance catalog, downloads the latest Debian 13 standard amd64 template when absent (or reuses an already matching local template), verifies local registration and archive presence, creates CT1231 stopped, repairs only an observed 0700 root-owned `/etc` to 0755 offline, unmounts, starts CT1231, verifies healthy systemd/D-Bus, then installs Ansible Core and Semaphore. No separate DigitalHouses Web UI.
 
 The initial Semaphore URL follows the runner's verified site inventory IP at TCP/3000 over HTTPS.
 
 ## Release status
 
-**Clean-cache Debian 13 bootstrap fix published; fresh PVE E2E re-acceptance pending.** Public loader CI tests PVE safety gates and shell syntax; private repository CI additionally tests a live Semaphore 2.19 API server. The full unattended fresh-CT installation, private Git checkout and first human login must still pass Home E2E. On error, **do not rerun blindly**: inspect the actual CT and GitHub deploy keys.
+**Clean-cache Debian 13 download passed on Home pilot. Preboot /etc permissions fix and deploy-key rotation released; clean PVE E2E re-acceptance pending.** Public loader CI tests PVE safety gates and shell syntax; private repository CI additionally tests a live Semaphore 2.19 API server. The full unattended fresh-CT installation, private Git checkout and first human login must still pass Home E2E. On error, **do not rerun blindly**: inspect the actual CT and GitHub deploy keys.
 
 The public loader pins:
-- Private installer commit: `ae8f717192f095e906636cbf43f7147e7f76fef7`.
-- Private installer blob: `1bd82c3b6800d4f7298e221353e0dbe2ba072b68`.
+- Private installer commit: `403cc76a07de736835a4092e74350933404c599c`.
+- Private installer blob: `b25dfda5f38f3ba2dd37aaa4b912c133acc518f5`.
 - Official GitHub CLI: 2.102.0 with independently pinned SHA-256.
 
 This repository does not contain the private installer; it performs GitHub authorization and **verified transfer** only. Changes to deployment logic happen in the private repository and require a new, reviewed pinned public release.
@@ -70,3 +70,7 @@ No credentials, API tokens, PVE private keys, inventories, customer-specific net
 The initial GitHub login and Fleet Vault password must be entered **by the owner using a trusted terminal/device**. An engineer with ongoing root access to PVE can inspect runtime secrets; GitHub 2FA alone does not protect against an untrusted PVE root operator.
 
 Public source: [DigitalHouses/ansimble-installer](https://github.com/DigitalHouses/ansimble-installer). Private source of truth: `DigitalHouses/ansimble-2.0`.
+
+## Reinstalling a site
+
+On a clean rebuild, the installer refuses to overwrite an existing CT1231. A previous GitHub site deploy key is replaced only after an additional exact `ROTATE DEPLOY KEY CT1231` confirmation; it must be the single matching read-only site key. Cancelling preserves it. This confirmation is independent of `CREATE CT1231` or `COMPLETE SEMAPHORE CT1231`. Rotation removes the old key before registering the new key; if GitHub registration fails, manual recovery is required. The installer never prints credentials.
