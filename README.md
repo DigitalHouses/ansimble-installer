@@ -12,7 +12,7 @@
 
 `install.sh` версии `673e45919051b2eb206205b059d5b66181d64513` использует:
 
-- код: `fd70c7927c2868dbbf67cf8454d4e5733783a807` из `dh_ansible`;
+- код: `267986be6db414a72fe4476656ebcdb230ce77d6` из `dh_ansible`;
 - Fleet Detail: `acde4a83668a0285fe05f54b515211c0b2663ef1`;
 - отдельно проверяемый Git blob файла `bootstrap/semaphore-host-install.py`;
 - официальный GitHub CLI 2.102.0 с проверкой SHA-256.
