@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
-# Public DigitalHouses bootstrap. Private deployment code is not mirrored here.
+# Public DigitalHouses bootstrap: immutable dh_ansible code + private Fleet Detail data.
 set -Eeuo pipefail
 umask 077
 
 SITE="${1:-}"
-RELEASE="403cc76a07de736835a4092e74350933404c599c"
-PRIVATE_INSTALLER_BLOB="b25dfda5f38f3ba2dd37aaa4b912c133acc518f5"
+CODE_RELEASE="fd70c7927c2868dbbf67cf8454d4e5733783a807"
+CODE_INSTALLER_BLOB="43bd513dea60adb5f14234ba2aeeca06f0063f22"
+FLEET_RELEASE="acde4a83668a0285fe05f54b515211c0b2663ef1"
 GH_VERSION="2.102.0"
 GH_SHA256="bb766f710eef8ede859c18578c72c327597cd4c8a85b06001b1f3843c6019386"
 
 RESUME_ARGS=()
 if (( $# == 2 )) && [[ "${2}" == "--resume" ]]; then
   RESUME_ARGS=(--resume)
+elif (( $# == 2 )) && [[ "${2}" == "--resume-fresh" ]]; then
+  RESUME_ARGS=(--resume-fresh)
 elif (( $# == 2 )) && [[ "${2}" == "--resume-ansible" ]]; then
   RESUME_ARGS=(--resume-ansible)
 elif (( $# == 2 )) && [[ "${2}" == "--resume-semaphore" ]]; then
   RESUME_ARGS=(--resume-semaphore)
 elif (( $# != 1 )); then
-  echo "BLOCKED: usage: install.sh <site-id> [--resume|--resume-ansible|--resume-semaphore]" >&2
+  echo "BLOCKED: usage: install.sh <owner>-<type> [--resume|--resume-fresh|--resume-ansible|--resume-semaphore]" >&2
   exit 2
 fi
-if [[ ! "$SITE" =~ ^[a-z][a-z0-9_-]{0,30}$ ]]; then
+if [[ ! "$SITE" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)+$ ]]; then
   echo "BLOCKED: invalid site ID" >&2
   exit 2
 fi
@@ -34,7 +37,8 @@ trap 'rc=$?; rm -rf "$WORK"; echo "RESULT_RC=$rc"; echo "TERMINAL STAYS OPEN"' E
 mkdir -m 700 "$WORK/gh-config"
 
 echo "=== DIGITALHOUSES · PUBLIC NETWORK BOOTSTRAP ==="
-echo "PRIVATE_RELEASE=$RELEASE"
+echo "CODE_RELEASE=$CODE_RELEASE"
+echo "FLEET_RELEASE=$FLEET_RELEASE"
 curl -fsSL --max-time 120 \
   "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" \
   -o "$WORK/gh.tgz"
@@ -50,17 +54,17 @@ echo "https://github.com/login/device"
 gh auth login --web --git-protocol https
 gh auth status >/dev/null
 
-echo "=== FETCH IMMUTABLE PRIVATE BOOTSTRAP ==="
+echo "=== FETCH IMMUTABLE DH ANSIBLE BOOTSTRAP ==="
 gh api \
-  "repos/DigitalHouses/ansimble-2.0/contents/bootstrap/semaphore-host-install.py?ref=$RELEASE" \
+  "repos/DigitalHouses/dh_ansible/contents/bootstrap/semaphore-host-install.py?ref=$CODE_RELEASE" \
   > "$WORK/release.json"
 
-python3 - "$WORK/release.json" "$WORK/private-install.py" "$PRIVATE_INSTALLER_BLOB" <<'PY'
+python3 - "$WORK/release.json" "$WORK/code-install.py" "$CODE_INSTALLER_BLOB" <<'PY'
 import base64, hashlib, json, os, pathlib, sys
 source, target, expected_sha = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
 record = json.loads(source.read_text())
 if record.get("type") != "file" or record.get("encoding") != "base64":
-    raise SystemExit("BLOCKED: private installer source missing")
+    raise SystemExit("BLOCKED: pinned dh_ansible bootstrap file missing")
 blob = base64.b64decode(record["content"])
 identity = hashlib.sha1(b"blob " + str(len(blob)).encode() + b"\0" + blob).hexdigest()
 if identity != expected_sha or record.get("sha") != expected_sha:
@@ -68,7 +72,7 @@ if identity != expected_sha or record.get("sha") != expected_sha:
 fd = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o700)
 with os.fdopen(fd, "wb") as output:
     output.write(blob)
-print("PRIVATE_INSTALLER_SOURCE=VERIFIED")
+print("DH_ANSIBLE_INSTALLER_SOURCE=VERIFIED")
 PY
 
 echo "=== READ NETWORK CONFIGURATION ==="
@@ -94,13 +98,14 @@ if (( ${#NETWORK[@]} != 3 )); then
   echo "BLOCKED: PVE network resolution failed" >&2; exit 2
 fi
 echo "PVE=${NETWORK[0]} RUNNER=${NETWORK[1]}"
-echo "=== RUN PINNED PRIVATE INSTALLER ==="
-python3 "$WORK/private-install.py" \
+echo "=== RUN PINNED DH ANSIBLE INSTALLER ==="
+python3 "$WORK/code-install.py" \
   --site "$SITE" \
   --pve-ip "${NETWORK[0]}" \
   --runner-cidr "${NETWORK[1]}" \
   --gateway "${NETWORK[2]}" \
-  --expected-commit "$RELEASE" \
+  --expected-commit "$CODE_RELEASE" \
+  --expected-fleet-commit "$FLEET_RELEASE" \
   --use-github-session --apply "${RESUME_ARGS[@]}"
 
 echo "=== DONE ==="
